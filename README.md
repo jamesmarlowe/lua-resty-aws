@@ -100,6 +100,19 @@ local ok, err = fh:put_record(event_information)
 
 Send an event to kinesis firehose.
 
+```lua
+local kinesis_firehose = require "resty.kinesis_firehose"
+local fh, err = kinesis_firehose:new("id", "key", "[region]")
+local event_information = {
+        stream_name = "TEST",
+        stream_data = "testtesttesttesttest",
+        partition_key = "TESTTEST",
+    }
+local ok, err = fh:put_batch(event_information)
+```
+
+Send batched events to kinesis firehose.
+
 [Back to TOC](#table-of-contents)
 
 

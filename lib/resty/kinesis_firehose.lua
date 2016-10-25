@@ -76,6 +76,7 @@ function _M.put_record(self, _event_information, _batch) -- batch pattern ie. %Z
         for _,_data in pairs(_M.batch[_event_information.stream_name]) do
             _body['Records'][#_body['Records']+1]={['Data'] = ngx.encode_base64(_data..string.char(10))}
         end
+        _M.batch[_event_information.stream_name] = {}
     else
         _body['Record'] = {
                 ['Data'] = ngx.encode_base64(_event_information.stream_data..string.char(10)),
