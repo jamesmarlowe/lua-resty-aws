@@ -1,7 +1,9 @@
 Name
 ====
 
-lua-resty-aws - Make Authenticated AWS Rest API Requests
+lua-resty-aws - Make Authenticated AWS Rest API Requests.
+
+This library is meant to be a fast connection to the services that might be called repeatedly from a webserver, if you're looking for a full sdk, I recommend boto.
 
 Table of Contents
 =================

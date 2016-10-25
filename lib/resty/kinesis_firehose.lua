@@ -10,6 +10,7 @@
 
 local aws = require "resty.aws"
 local request = aws.request
+local default_batch_size = 499
 
 local ok, new_tab = pcall(require, "table.new")
 if not ok then
@@ -36,24 +37,51 @@ function _M.new(self, id, key, region)
         region = "us-east-1"
     end
     
-    return setmetatable({id = id,key = key,region = region}, mt)
+    return setmetatable({id = id,key = key,region = region,batch = {}}, mt)
 end
 
 
--- takes a table of event_information to send in the event to mobile analytics
+-- takes a table of event_information to send in the event to kinesis firehose
+-- keeps a table of the stream data to batch together
 -- required parameters:
 -- stream_name (the kinesis stream name)
 -- stream_data (the data you wish to send)
 -- partition_key (input to a hash function that maps data to a specific shard)
-function _M.put_record(self, _event_information)
+function _M.put_batch(self, _event_information, _batch_size)
+    if not _batch_size then _batch_size = default_batch_size end
+    if not _M.batch[_event_information.stream_name] then
+        _M.batch[_event_information.stream_name] = {} 
+    end
+    local _batch_length = #(_M.batch[_event_information.stream_name])+1
+    _M.batch[_event_information.stream_name][_batch_length] = _event_information.stream_data
+    if _batch_length >= _batch_size then
+        _M.put_record(self, _event_information, true)
+    end
+end
+
+
+-- takes a table of event_information to send in the event to kinesis firehose
+-- required parameters:
+-- stream_name (the kinesis stream name)
+-- stream_data (the data you wish to send)
+-- partition_key (input to a hash function that maps data to a specific shard)
+function _M.put_record(self, _event_information, _batch) -- batch pattern ie. %Z+ for null delimited
     local _date = ngx.utctime():gsub(" ","T").."Z"
     local _method = "POST"
-    local _body = cjson.encode({
-            ['DeliveryStreamName'] = _event_information.stream_name,
-            ['Record'] = {
-                    ['Data'] = ngx.encode_base64(_event_information.stream_data..string.char(10)),
-                }
-        })
+    local _body = {
+            ['DeliveryStreamName'] = _event_information.stream_name
+        }
+    if _batch then
+        _body['Records'] = {}
+        for _,_data in pairs(_M.batch[_event_information.stream_name]) do
+            _body['Records'][#_body['Records']+1]={['Data'] = ngx.encode_base64(_data..string.char(10))}
+        end
+    else
+        _body['Record'] = {
+                ['Data'] = ngx.encode_base64(_event_information.stream_data..string.char(10)),
+            }
+    end
+    _body = cjson.encode(_body)
     local _accept = "application/hal+json"
     local _content_type = "application/x-amz-json-1.1"
     local _resource = "/"
@@ -61,7 +89,7 @@ function _M.put_record(self, _event_information)
     local _host = "firehose.us-east-1.amazonaws.com"
     local _service = "firehose"
     local _target_prefix = "Firehose_20150804"
-    local _action = "PutRecord"
+    local _action = _batch and "PutRecordBatch" or "PutRecord"
     local _target = table.concat({_target_prefix,_action},".")
     local _headers = {
               ["accept"] = _accept,
