@@ -49,11 +49,11 @@ end
 -- partition_key (input to a hash function that maps data to a specific shard)
 function _M.put_batch(self, _event_information, _batch_size)
     if not _batch_size then _batch_size = default_batch_size end
-    if not _M.batch[_event_information.stream_name] then
-        _M.batch[_event_information.stream_name] = {} 
+    if not self.batch[_event_information.stream_name] then
+        self.batch[_event_information.stream_name] = {} 
     end
-    local _batch_length = #(_M.batch[_event_information.stream_name])+1
-    _M.batch[_event_information.stream_name][_batch_length] = _event_information.stream_data
+    local _batch_length = #(self.batch[_event_information.stream_name])+1
+    self.batch[_event_information.stream_name][_batch_length] = _event_information.stream_data
     if _batch_length >= _batch_size then
         _M.put_record(self, _event_information, true)
     end
@@ -73,10 +73,10 @@ function _M.put_record(self, _event_information, _batch) -- batch pattern ie. %Z
         }
     if _batch then
         _body['Records'] = {}
-        for _,_data in pairs(_M.batch[_event_information.stream_name]) do
+        for _,_data in pairs(self.batch[_event_information.stream_name]) do
             _body['Records'][#_body['Records']+1]={['Data'] = ngx.encode_base64(_data..string.char(10))}
         end
-        _M.batch[_event_information.stream_name] = {}
+        self.batch[_event_information.stream_name] = {}
     else
         _body['Record'] = {
                 ['Data'] = ngx.encode_base64(_event_information.stream_data..string.char(10)),
