@@ -16,6 +16,7 @@ Table of Contents
     * [new](#new)
     * [mobileanalytics](#mobileanalytics)
     * [kinesisfirehose](#kinesisfirehose)
+    * [s3](#s3)
 * [Limitations](#limitations)
 * [Installation](#installation)
 * [TODO](#todo)
@@ -112,6 +113,45 @@ local ok, err = fh:put_batch(event_information)
 ```
 
 Send batched events to kinesis firehose.
+
+[Back to TOC](#table-of-contents)
+
+s3
+---------------
+this module requires some extra packages:
+```
+sudo luarocks install lua-resty-jit-uuid
+sudo luarocks install lzlib
+```
+```lua
+local restys3 = require "resty.s3"
+local s3, err = restys3:new("id", "key", "[region]")
+local event_information = {
+        bucket_name = "TEST",
+        stream_data = "test, test, test, test, test",
+        bucket_date = true, -- uses year/month/day/hour/file binning and filenaming
+        gzip_upload = true, -- gzips content and ads .gz to filename
+        file_name = "data", -- name of file or filename prefix if using bucket_date
+    }
+local ok, err = s3:put_record(event_information)
+```
+
+Send a record to s3.
+
+```lua
+local restys3 = require "resty.s3"
+local s3, err = restys3:new("id", "key", "[region]")
+local event_information = {
+        bucket_name = "TEST",
+        stream_data = "test, test, test, test, test",
+        bucket_date = true, -- uses year/month/day/hour/file binning and filenaming
+        gzip_upload = true, -- gzips content and ads .gz to filename
+        file_name = "data", -- name of file or filename prefix if using bucket_date
+    }
+local ok, err = s3:put_batch(event_information)
+```
+
+Send batched records to s3.
 
 [Back to TOC](#table-of-contents)
 
