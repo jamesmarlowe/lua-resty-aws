@@ -88,7 +88,7 @@ function _M.put_record(self, _event_information, _batch)
     local _resource
     if _event_information.bucket_date then
         local _date_file_name = (_event_information.file_name or "data").."-".._utc:gsub("[%p,%s]","-").."-"..uuid()
-        _resource = "/".._utc:gsub("[%p,%s]","/"):sub(1,14).._date_file_name
+        _resource = "/"..(_event_information.file_name or "data").."/".._utc:gsub("[%p,%s]","/"):sub(1,14).._date_file_name
     else
         local _body_md5 = ngx.md5(_body)
         _resource = "/"..(_event_information.file_name or _body_md5)
